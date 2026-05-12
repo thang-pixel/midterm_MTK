@@ -1,0 +1,15 @@
+{
+  "id": "a53239ef",
+  "applicantName": "thang",
+  "applicantEmail": "thang@gmail.com",
+  "applicantPhone": "0123456789",
+  "officerName": "Cán bộ trực ban",
+  "officerEmail": "officer@tdtu.edu.vn",
+  "officerPhone": "0123456789",
+  "documentType": "DON_XIN_PHEP",
+  "filePath": "server_storage\\a53239ef_abc.txt",
+  "fileExtension": "txt",
+  "fileSizeKB": 0,
+  "digitalSignature": "thang",
+  "status": "DA_TIEP_NHAN"
+}
