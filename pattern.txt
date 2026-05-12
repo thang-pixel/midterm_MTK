@@ -1,0 +1,6 @@
+STT	Yêu cầu nghiệp vụ (v2.0)	Design Pattern đề xuất	Lý do áp dụng
+1	Lưu nháp và nộp hồ sơ theo từng bước	Builder	Giúp khởi tạo đối tượng Document phức tạp (13 trường dữ liệu) một cách linh hoạt. Cho phép "lắp ghép" thông tin qua từng bước (điền thông tin -> tải file -> xác nhận) thay vì phải nhập tất cả cùng lúc.
+2	Tích hợp khả năng đọc nhiều định dạng (.pdf, .jpg, .png)	Strategy	Mỗi định dạng file sẽ có một thuật toán đọc (OCR/Text Extract) riêng. Pattern này giúp tách biệt các logic xử lý file và dễ dàng bổ sung định dạng mới mà không làm thay đổi code xử lý chính.
+3	Xây dựng quy trình kiểm duyệt linh hoạt (3 trạm)	Chain of Responsibility	Các bước kiểm tra (Dung lượng, Virus, Trùng lặp) được tổ chức thành một chuỗi các mắt xích. Hồ sơ sẽ đi qua từng trạm; nếu một trạm từ chối, quy trình sẽ dừng ngay lập tức. Dễ dàng thêm/bớt hoặc đổi thứ tự trạm.
+4	Đăng ký nhận thông báo theo nhu cầu (Email, SMS, App)	Observer	Hồ sơ đóng vai trò là "Subject", các kênh thông báo là "Observers". Khi trạng thái hồ sơ thay đổi, hệ thống sẽ tự động thông báo đến tất cả các kênh mà người dùng đã đăng ký trước đó.
+5	Mở rộng khả năng lưu trữ (MySQL, Cloud S3)	Adapter (hoặc Bridge)	Dùng để "thích nghi" các giao diện lưu trữ khác nhau (Lưu file local, SQL, Cloud) về một chuẩn chung. Giúp tách biệt logic nghiệp vụ khỏi chi tiết cài đặt của các hệ thống lưu trữ bên thứ ba.

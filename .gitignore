@@ -1,0 +1,6 @@
+*.class
+server_storage/
+.vscode/
+.idea/
+*.log
+bin/

@@ -1,0 +1,77 @@
+1. Bối cảnh dự án
+Hiện tại, đơn vị đang sử dụng phần mềm quản lý hồ sơ phiên bản 1.0. Tuy nhiên, do lượng hồ sơ ngày càng tăng và các quy trình hành chính
+thường xuyên thay đổi, hệ thống cũ đã bộc lộ nhiều hạn chế và kém linh hoạt. Ban lãnh đạo yêu cầu nâng cấp phần mềm lên phiên bản 2.0 để đáp
+ứng tốt hơn nhu cầu số hóa, mở rộng khả năng lưu trữ và dễ dàng tích hợp với các hệ thống khác trong tương lai. Nhóm thực hiện sẽ đóng vai trò
+là đội ngũ kỹ sư phần mềm, chịu trách nhiệm phân tích mã nguồn hiện tại và tái cấu trúc lại kiến trúc hệ thống.
+2. Hiện trạng hệ thống (Phiên bản 1.0)
+Đội ngũ phát triển sẽ được cung cấp mã nguồn đang vận hành của phiên bản 1.0 (source code
+https://drive.google.com/file/d/1KNx03RHAIkisUCcXb_cuFco29ugdl_lP/view?usp=sharing). Hiện tại, toàn bộ vòng đời của một bộ hồ sơ từ lúc
+tiếp nhận đến khi hoàn tất đang được xử lý thông qua một quy trình nguyên khối với các đặc tả nghiệp vụ chi tiết như sau:
+2.1. Nghiệp vụ Khởi tạo và Tiếp nhận hồ sơ Để một bộ hồ sơ được đưa vào hệ thống, người dân hoặc cán bộ trực quầy phải điền đầy đủ một
+biểu mẫu chứa 13 trường thông tin bắt buộc, bao gồm: Mã hồ sơ, Tiêu đề, Tên người gửi, Email, Số điện thoại, Phòng ban tiếp nhận, Loại hồ sơ,
+Mức độ ưu tiên (Thường/Khẩn/Thượng khẩn), Đường dẫn file đính kèm, Loại đuôi file, Kích thước file, Mã bảo mật và Trạng thái chữ ký số. Toàn
+bộ khối lượng thông tin này phải được cung cấp cùng một lúc trong một thao tác gửi duy nhất. Hệ thống không có cơ chế lưu trữ tạm thời; do đó,
+nếu người dùng đang nhập liệu mà chưa chuẩn bị kịp tệp đính kèm, họ không thể lưu lại các thông tin văn bản đã nhập.
+2.2. Nghiệp vụ Kiểm duyệt (Validation)
+Ngay khi hồ sơ được gửi tới, hệ thống sẽ đưa qua một chuỗi kiểm tra tính hợp lệ với thứ tự được quy định cố định. Trình tự này không thể thay
+đổi và bao gồm các bước:
+
+1. Kiểm tra thông tin liên lạc: Xác nhận địa chỉ Email người gửi phải đúng định dạng (chứa ký tự @).
+2. Kiểm tra tệp đính kèm: Xác nhận tệp đính kèm thực sự tồn tại trên máy chủ/ổ cứng.
+3. Kiểm tra dung lượng: Từ chối ngay lập tức nếu tệp đính kèm có kích thước vượt quá 5MB.
+4. Kiểm tra định dạng: Xác nhận đuôi tệp đính kèm phải là .TXT. Nếu hồ sơ không thỏa mãn bất kỳ điều kiện nào trong chuỗi trên, hệ thống
+sẽ lập tức đánh dấu hồ sơ là "Từ chối" (REJECTED), ngừng các bước kiểm tra tiếp theo và chuyển thẳng sang bước gửi thông báo.
+2.3. Nghiệp vụ Trích xuất nội dung (Extraction) Đối với các hồ sơ vượt qua vòng kiểm duyệt, hệ thống sẽ tiến hành đọc nội dung của tệp đính
+kèm để lưu trữ phục vụ việc tìm kiếm sau này.
+• Nếu tệp là .TXT, hệ thống sẽ đọc toàn bộ chuỗi văn bản bên trong tệp và lưu vào dữ liệu của hồ sơ.
+• Nếu tệp là các định dạng khác (như .PDF), hệ thống hiện tại chưa có khả năng xử lý, chỉ ghi nhận cảnh báo và để trống phần nội dung trích
+xuất.
+2.4. Nghiệp vụ Lưu trữ dữ liệu (Persistence) Sau khi trích xuất thành công, hệ thống chuyển trạng thái hồ sơ sang "Đã xử lý" (PROCESSED).
+Tuy nhiên, cơ sở hạ tầng hiện tại chưa được tích hợp hệ thống quản trị cơ sở dữ liệu chuyên dụng. Toàn bộ thông tin của bộ hồ sơ được hệ thống
+gom lại thành một cấu trúc dữ liệu và ghi trực tiếp thành một tập tin văn bản (định dạng .json) lưu rải rác trên ổ cứng cục bộ của máy chủ.
+2.5. Nghiệp vụ Gửi thông báo (Notification) Bất kể hồ sơ bị từ chối hay xử lý thành công, hệ thống đều kích hoạt quy trình gửi thông báo đến
+các bên liên quan theo một quy tắc chung:
+• Người nộp hồ sơ: Luôn luôn nhận được đồng thời cả một Email và một tin nhắn SMS thông báo về trạng thái mới nhất của hồ sơ.
+• Cán bộ quản lý: Nếu hồ sơ được đánh dấu ở mức độ từ "Khẩn" trở lên (Mức ưu tiên >= 2), hệ thống sẽ tự động gửi thêm một Email báo
+cáo đến Trưởng phòng ban tiếp nhận để đôn đốc xử lý. Quy tắc này áp dụng chung cho mọi loại hồ sơ mà không cho phép người dùng tùy
+chỉnh tắt/mở theo ý muốn.
+3. Yêu cầu nâng cấp hệ thống (Phiên bản 2.0)
+Nhiệm vụ của nhóm phát triển là không đập bỏ viết lại từ đầu, mà cần phân tích và áp dụng các Mẫu thiết kế phần mềm (Design Patterns) vào mã
+nguồn cũ để đáp ứng 5 yêu cầu nghiệp vụ mới sau đây:
+Yêu cầu 1: Cho phép lưu nháp và nộp hồ sơ theo từng bước Hệ thống mới cần hỗ trợ người dùng tạo lập hồ sơ qua nhiều giai đoạn (Ví dụ:
+Bước 1 điền thông tin cá nhân -> Lưu nháp; Bước 2 tải tài liệu -> Lưu nháp; Bước 3 xác nhận -> Nộp hồ sơ). Về mặt kỹ thuật, việc khởi tạo thông
+
+tin cho một bộ hồ sơ trong mã nguồn cũng cần được thiết kế linh hoạt, cho phép lắp ghép thông tin dần dần thay vì bắt buộc phải cung cấp toàn bộ
+dữ liệu ngay từ đầu.
+Yêu cầu 2: Tích hợp khả năng đọc nhiều định dạng tài liệu Hệ thống cần bổ sung tính năng trích xuất nội dung từ tệp .PDF và tệp hình ảnh
+(.JPG, .PNG) bằng cách gọi đến các dịch vụ nhận diện quang học (AI OCR) của bên thứ ba. Yêu cầu hệ thống: Mã nguồn phải tự động phân loại
+và chọn cách đọc phù hợp dựa trên đuôi file. Kiến trúc phần mềm phải được thiết kế sao cho việc bổ sung thêm các định dạng file mới sau này
+không làm xáo trộn mã nguồn xử lý trung tâm hiện tại.
+Yêu cầu 3: Xây dựng quy trình kiểm duyệt linh hoạt Quy trình kiểm duyệt mới sẽ bao gồm 3 trạm kiểm tra độc lập:
+1. Kiểm tra tính hợp lệ cơ bản (Dung lượng, định dạng).
+2. Quét an toàn bảo mật (Antivirus) đối với các file đính kèm.
+3. Kiểm tra tính toàn vẹn để chống nộp trùng lặp hồ sơ. Yêu cầu hệ thống: Hồ sơ cần đi qua lần lượt từng trạm kiểm tra này. Nếu không đạt
+tiêu chuẩn ở bất kỳ trạm nào, quy trình sẽ dừng lại ngay và trả về lỗi. Hệ thống cần cho phép quản trị viên dễ dàng sắp xếp lại thứ tự hoặc
+thêm/bớt các trạm kiểm tra trong tương lai mà không ảnh hưởng đến các bước khác.
+Yêu cầu 4: Đăng ký nhận thông báo theo nhu cầu Thay vì gửi thông báo đồng loạt, hệ thống cần bổ sung tính năng cho phép các tài khoản
+(người nộp, cán bộ tiếp nhận) tự lựa chọn kênh nhận thông báo phù hợp (chỉ nhận Email, chỉ nhận SMS, hoặc App Push). Khi trạng thái của hồ sơ
+có sự thay đổi, hệ thống sẽ tự động rà soát và kích hoạt gửi thông tin đến đúng các kênh đã được đăng ký theo dõi.
+Yêu cầu 5: Mở rộng khả năng lưu trữ dữ liệu Để giải quyết vấn đề lưu file .json rời rạc, hệ thống cần được nâng cấp để có thể lưu trữ dữ liệu
+vào Cơ sở dữ liệu (như MySQL) hoặc đẩy lên các nền tảng Đám mây (như AWS S3). Yêu cầu hệ thống: Cần tách biệt rõ ràng giữa logic xử lý
+nghiệp vụ hồ sơ và logic thao tác với dữ liệu. Việc chuyển đổi qua lại giữa các hình thức lưu trữ (Local JSON, Database, Cloud) phải diễn ra độc
+lập, không làm rò rỉ mã nguồn kết nối cơ sở dữ liệu vào các lớp xử lý nghiệp vụ cốt lõi.
+4. Nhiệm vụ của nhóm phát triển
+1. Phân tích và chọn pattern: Đọc hiểu mã nguồn hệ thống v1.0. Tự thảo luận, lập luận và quyết định xem mỗi yêu cầu cần áp dụng các
+pattern nào để nâng cấp của hệ thống cũ sao cho xử lý được các yêu cầu đồng thời hệ thống phải tuân thủ các nguyên tắc thiết kế và dễ mở
+rộng, dễ bảo trì.
+2. Lập trình:
+
+o Tái cấu trúc mã nguồn của hệ thống cũ (link mã nguồn hệ thống 1.0
+https://drive.google.com/file/d/1KNx03RHAIkisUCcXb_cuFco29ugdl_lP/view?usp=sharing).
+o Có thể bổ sung, sửa đổi giao diện người dùng sao cho phù hợp, có thể không cần kết nối Database/Cloud thật mà dùng dữ liệu giả/log
+ra màn hình để mô phỏng.
+o Xây dựng file thực thi chính (Main) hoặc các Unit Tests chứa kịch bản chứng minh hệ thống mới đã hoạt động đúng theo các nghiệp
+vụ v2.0.
+
+3. Báo cáo & Thuyết trình: Trình bày rõ cấu trúc thiết kế trước và sau khi refactor. Trọng tâm đánh giá nằm ở việc nhóm bảo vệ được lý do
+tại sao lại lựa chọn pattern đó mà không phải pattern khác hay không dùng pattern.
