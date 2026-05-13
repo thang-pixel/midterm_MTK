@@ -57,6 +57,10 @@ public class MainSwingUI extends JFrame {
         UIStyle.applyButtonStyle(btnAdd, UIStyle.SUCCESS_COLOR);
         btnAdd.addActionListener(e -> new AddDocumentDialog(this, processor).setVisible(true));
 
+        JButton btnContinue = new JButton("Tiếp tục xử lý");
+        UIStyle.applyButtonStyle(btnContinue, UIStyle.ACCENT_COLOR);
+        btnContinue.addActionListener(e -> continueDraftAction());
+
         JButton btnConfig = new JButton("Cấu hình hệ thống");
         UIStyle.applyButtonStyle(btnConfig, UIStyle.PRIMARY_COLOR);
         btnConfig.addActionListener(e -> showConfigDialog());
@@ -66,6 +70,7 @@ public class MainSwingUI extends JFrame {
         btnClearLog.addActionListener(e -> logArea.setText(""));
 
         actionPanel.add(btnAdd);
+        actionPanel.add(btnContinue);
         actionPanel.add(btnConfig);
         actionPanel.add(btnClearLog);
 
@@ -154,6 +159,38 @@ public class MainSwingUI extends JFrame {
         config.setVisible(true);
     }
 
+    private void continueDraftAction() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản nháp trong bảng!");
+            return;
+        }
+
+        String id = (String) tableModel.getValueAt(selectedRow, 0);
+        Document draft = findDocumentById(id);
+        
+        if (draft != null) {
+            new AddDocumentDialog(this, processor, draft).setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, "Không tìm thấy dữ liệu hồ sơ này!");
+        }
+    }
+
+    private Document findDocumentById(String id) {
+        for (Document d : documentList) {
+            if (d.id.equals(id)) return d;
+        }
+        return null;
+    }
+
+    public void refreshTable() {
+        SwingUtilities.invokeLater(() -> {
+            tableModel.setRowCount(0);
+            documentList.clear();
+            loadExistingDocuments();
+        });
+    }
+
     public void addDocumentToList(Document doc) {
         documentList.add(doc);
         String priorityText = doc.priority == 2 ? "Thượng khẩn" : (doc.priority == 1 ? "Khẩn" : "Thường");
@@ -171,21 +208,58 @@ public class MainSwingUI extends JFrame {
 
         for (File f : files) {
             try {
-                String content = new String(Files.readAllBytes(f.toPath()));
-                // Sơ đồ nạp đơn giản (Mô phỏng nạp từ JSON)
-                String id = extractValue(content, "id");
-                String name = extractValue(content, "applicantName");
-                String type = extractValue(content, "documentType");
-                String status = extractValue(content, "status");
-                String ext = extractValue(content, "fileExtension");
-                String pStr = extractValue(content, "priority");
-                int priority = Integer.parseInt(pStr.isEmpty() ? "0" : pStr);
-                
-                String priorityText = priority == 2 ? "Thượng khẩn" : (priority == 1 ? "Khẩn" : "Thường");
-                tableModel.addRow(new Object[]{id, name, type, priorityText, status, ext});
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                String content = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                Document doc = parseJsonToDocument(content);
+                if (doc != null) {
+                    documentList.add(doc);
+                    String priorityText = doc.priority == 2 ? "Thượng khẩn" : (doc.priority == 1 ? "Khẩn" : "Thường");
+                    tableModel.addRow(new Object[]{doc.id, doc.applicantName, doc.documentType, priorityText, doc.status, doc.fileExtension});
+                }
             } catch (Exception e) {
                 // Skip invalid files
             }
+        }
+    }
+
+    private Document parseJsonToDocument(String content) {
+        try {
+            String id = extractValue(content, "id");
+            String name = extractValue(content, "applicantName");
+            String email = extractValue(content, "applicantEmail");
+            String phone = extractValue(content, "applicantPhone");
+            String offName = extractValue(content, "officerName");
+            String offEmail = extractValue(content, "officerEmail");
+            String offPhone = extractValue(content, "officerPhone");
+            String type = extractValue(content, "documentType");
+            String status = extractValue(content, "status");
+            String path = extractValue(content, "filePath");
+            String ext = extractValue(content, "fileExtension");
+            String sig = extractValue(content, "digitalSignature");
+            
+            String pStr = extractValue(content, "priority");
+            int priority = Integer.parseInt(pStr.isEmpty() ? "0" : pStr);
+            
+            String draftStr = extractValue(content, "isDraft");
+            boolean isDraft = Boolean.parseBoolean(draftStr);
+
+            String prefsStr = extractValue(content, "notificationPreferences");
+            List<String> prefs = new ArrayList<>();
+            if (!prefsStr.isEmpty()) {
+                for (String p : prefsStr.split(",")) prefs.add(p.trim());
+            }
+
+            return new Document.Builder(id)
+                .applicantInfo(name, email, phone)
+                .officerInfo(offName, offEmail, offPhone)
+                .documentDetails(type, sig, priority)
+                .fileInfo(path, ext, 0)
+                .notifications(prefs)
+                .status(status)
+                .isDraft(isDraft)
+                .build();
+        } catch (Exception e) {
+            return null;
         }
     }
 
@@ -193,7 +267,6 @@ public class MainSwingUI extends JFrame {
         String pattern = "\"" + key + "\": \"";
         int start = json.indexOf(pattern);
         if (start == -1) {
-            // Try numeric
             pattern = "\"" + key + "\": ";
             start = json.indexOf(pattern);
             if (start == -1) return "";
@@ -214,11 +287,28 @@ public class MainSwingUI extends JFrame {
 
     static class CustomOutputStream extends java.io.OutputStream {
         private JTextArea textArea;
+        private java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+
         public CustomOutputStream(JTextArea textArea) { this.textArea = textArea; }
+        
         @Override
         public void write(int b) {
-            textArea.append(String.valueOf((char) b));
-            textArea.setCaretPosition(textArea.getDocument().getLength());
+            buffer.write(b);
+            if (b == '\n') {
+                flush();
+            }
+        }
+
+        @Override
+        public void flush() {
+            if (buffer.size() > 0) {
+                String text = buffer.toString(java.nio.charset.StandardCharsets.UTF_8);
+                SwingUtilities.invokeLater(() -> {
+                    textArea.append(text);
+                    textArea.setCaretPosition(textArea.getDocument().getLength());
+                });
+                buffer.reset();
+            }
         }
     }
 }

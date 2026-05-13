@@ -23,11 +23,15 @@ public class AddDocumentDialog extends JDialog {
     private final MainSwingUI parent;
 
     public AddDocumentDialog(MainSwingUI parent, DocumentProcessor processor) {
-        super(parent, "TIẾP NHẬN HỒ SƠ - v2.0 Wizard", true);
+        this(parent, processor, null);
+    }
+
+    public AddDocumentDialog(MainSwingUI parent, DocumentProcessor processor, Document existingDoc) {
+        super(parent, existingDoc == null ? "TIẾP NHẬN HỒ SƠ - v2.0 Wizard" : "TIẾP TỤC HOÀN THIỆN HỒ SƠ", true);
         this.parent = parent;
         this.processor = processor;
 
-        setSize(600, 500);
+        setSize(600, 550);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout());
 
@@ -36,16 +40,20 @@ public class AddDocumentDialog extends JDialog {
         tabbedPane.addTab("Bước 2: Hồ sơ & Thông báo", createDetailsPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
+        if (existingDoc != null) {
+            prefillFields(existingDoc);
+        }
+
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPanel.setBackground(Color.WHITE);
         
         JButton btnDraft = new JButton("Lưu nháp");
         UIStyle.applyButtonStyle(btnDraft, UIStyle.SECONDARY_COLOR);
-        btnDraft.addActionListener(e -> submitAction(true));
+        btnDraft.addActionListener(e -> submitAction(true, existingDoc != null ? existingDoc.id : null));
 
         JButton btnSubmit = new JButton("Nộp hồ sơ");
         UIStyle.applyButtonStyle(btnSubmit, UIStyle.PRIMARY_COLOR);
-        btnSubmit.addActionListener(e -> submitAction(false));
+        btnSubmit.addActionListener(e -> submitAction(false, existingDoc != null ? existingDoc.id : null));
 
         JButton btnCancel = new JButton("Hủy bỏ");
         UIStyle.applyButtonStyle(btnCancel, UIStyle.DANGER_COLOR);
@@ -55,6 +63,27 @@ public class AddDocumentDialog extends JDialog {
         btnPanel.add(btnSubmit);
         btnPanel.add(btnCancel);
         add(btnPanel, BorderLayout.SOUTH);
+    }
+
+    private void prefillFields(Document doc) {
+        txtApplicantName.setText(doc.applicantName);
+        txtApplicantEmail.setText(doc.applicantEmail);
+        txtApplicantPhone.setText(doc.applicantPhone);
+        txtOfficerName.setText(doc.officerName);
+        txtOfficerEmail.setText(doc.officerEmail);
+        txtOfficerPhone.setText(doc.officerPhone);
+        cbDocumentType.setSelectedItem(doc.documentType);
+        cbPriority.setSelectedIndex(doc.priority);
+        txtDigitalSignature.setText(doc.digitalSignature);
+        if (doc.filePath != null && !doc.filePath.isEmpty()) {
+            selectedFile = new File(doc.filePath);
+            lblFileName.setText(selectedFile.getName());
+        }
+        if (doc.notificationPreferences != null) {
+            chkEmail.setSelected(doc.notificationPreferences.contains("EMAIL"));
+            chkSms.setSelected(doc.notificationPreferences.contains("SMS"));
+            chkApp.setSelected(doc.notificationPreferences.contains("APP"));
+        }
     }
 
     private JPanel createInfoPanel() {
@@ -86,6 +115,9 @@ public class AddDocumentDialog extends JDialog {
 
         gbc.gridx = 0; gbc.gridy = 5; p.add(new JLabel("Email cán bộ:"), gbc);
         gbc.gridx = 1; txtOfficerEmail = new JTextField("officer@tdtu.edu.vn", 20); p.add(txtOfficerEmail, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 6; p.add(new JLabel("SĐT cán bộ:"), gbc);
+        gbc.gridx = 1; txtOfficerPhone = new JTextField("0123456789", 20); p.add(txtOfficerPhone, gbc);
 
         return p;
     }
@@ -141,7 +173,7 @@ public class AddDocumentDialog extends JDialog {
         return p;
     }
 
-    private void submitAction(boolean isDraft) {
+    private void submitAction(boolean isDraft, String existingId) {
         String filePath = (selectedFile != null) ? selectedFile.getAbsolutePath() : "";
         String ext = "";
         long size = 0;
@@ -160,8 +192,9 @@ public class AddDocumentDialog extends JDialog {
         if (chkApp.isSelected()) prefs.add("APP");
 
         int priority = cbPriority.getSelectedIndex();
+        String id = (existingId != null) ? existingId : UUID.randomUUID().toString().substring(0, 8);
 
-        Document doc = new Document.Builder(UUID.randomUUID().toString().substring(0, 8))
+        Document doc = new Document.Builder(id)
             .applicantInfo(txtApplicantName.getText().trim(), txtApplicantEmail.getText().trim(), txtApplicantPhone.getText().trim())
             .officerInfo(txtOfficerName.getText().trim(), txtOfficerEmail.getText().trim(), txtOfficerPhone.getText().trim())
             .documentDetails(cbDocumentType.getSelectedItem().toString(), txtDigitalSignature.getText().trim(), priority)
@@ -173,7 +206,11 @@ public class AddDocumentDialog extends JDialog {
         processor.process(doc);
 
         if (isDraft || "DANG_XET_DUYET".equals(doc.status)) {
-            parent.addDocumentToList(doc);
+            if (existingId == null) {
+                parent.addDocumentToList(doc);
+            } else {
+                parent.refreshTable();
+            }
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Hồ sơ không hợp lệ. Vui lòng kiểm tra log hệ thống bên dưới.", "Lỗi Kiểm Duyệt", JOptionPane.ERROR_MESSAGE);

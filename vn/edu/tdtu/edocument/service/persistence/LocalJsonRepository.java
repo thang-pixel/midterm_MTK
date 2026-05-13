@@ -21,17 +21,25 @@ public class LocalJsonRepository implements DocumentRepository {
         }
 
         try {
+            if (doc.id == null) doc.id = java.util.UUID.randomUUID().toString().substring(0, 8);
+            
             String finalTargetFilePath = "";
             
             // Chỉ thực hiện copy file nếu đường dẫn file không rỗng và file tồn tại
-            if (doc.filePath != null && !doc.filePath.isEmpty()) {
+            if (doc.filePath != null && !doc.filePath.trim().isEmpty()) {
                 java.io.File sourceFile = new java.io.File(doc.filePath);
-                if (sourceFile.exists()) {
+                if (sourceFile.exists() && sourceFile.isFile()) {
                     Path sourcePath = Paths.get(doc.filePath);
                     Path targetPath = Paths.get(storageDirPath + File.separator + doc.id + "_" + sourcePath.getFileName().toString());
                     Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                     finalTargetFilePath = targetPath.toString().replace("\\", "\\\\");
                 }
+            }
+
+            // Đảm bảo notificationPreferences không null
+            String prefsStr = "";
+            if (doc.notificationPreferences != null) {
+                prefsStr = String.join(",", doc.notificationPreferences);
             }
 
             String json = "{\n" +
@@ -48,7 +56,7 @@ public class LocalJsonRepository implements DocumentRepository {
                     "  \"fileSizeKB\": " + doc.fileSizeKB + ",\n" +
                     "  \"digitalSignature\": \"" + doc.digitalSignature + "\",\n" +
                     "  \"priority\": " + doc.priority + ",\n" +
-                    "  \"notificationPreferences\": \"" + String.join(",", doc.notificationPreferences) + "\",\n" +
+                    "  \"notificationPreferences\": \"" + prefsStr + "\",\n" +
                     "  \"isDraft\": " + doc.isDraft + ",\n" +
                     "  \"status\": \"" + doc.status + "\"\n" +
                     "}";
@@ -60,8 +68,9 @@ public class LocalJsonRepository implements DocumentRepository {
             }
             System.out.println("  [OK] Đã lưu tệp JSON: " + dataFile.getName());
 
-        } catch (IOException e) {
-            System.err.println("  [LỖI] Lỗi khi lưu trữ: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("  [LỖI HỆ THỐNG] Không thể lưu trữ: " + e.toString());
+            e.printStackTrace();
         }
     }
 }

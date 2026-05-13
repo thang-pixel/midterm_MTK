@@ -9,6 +9,7 @@ public class UIStyle {
     // --- COLORS ---
     public static final Color PRIMARY_COLOR = new Color(41, 128, 185);    // Professional Blue
     public static final Color SECONDARY_COLOR = new Color(149, 165, 166);  // Silver
+    public static final Color ACCENT_COLOR = new Color(52, 152, 219);     // Lighter Blue
     public static final Color SUCCESS_COLOR = new Color(39, 174, 96);     // Emerald Green
     public static final Color DANGER_COLOR = new Color(192, 57, 43);      // Pomegranate Red
     public static final Color BACKGROUND_COLOR = new Color(245, 247, 250); 
