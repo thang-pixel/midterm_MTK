@@ -4,153 +4,144 @@ import vn.edu.tdtu.edocument.model.Document;
 import vn.edu.tdtu.edocument.service.DocumentProcessor;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class AddDocumentDialog extends JDialog {
     private JTextField txtApplicantName, txtApplicantEmail, txtApplicantPhone;
     private JTextField txtOfficerName, txtOfficerEmail, txtOfficerPhone;
-    private JComboBox<String> cbDocumentType;
+    private JComboBox<String> cbDocumentType, cbPriority;
     private JTextField txtDigitalSignature;
     private JLabel lblFileName;
-    private File selectedFile;
+    private JCheckBox chkEmail, chkSms, chkApp;
     
-    private DocumentProcessor processor;
-    private MainSwingUI parent;
+    private File selectedFile;
+    private final DocumentProcessor processor;
+    private final MainSwingUI parent;
 
     public AddDocumentDialog(MainSwingUI parent, DocumentProcessor processor) {
-        super(parent, "Tiếp nhận hồ sơ mới", true);
+        super(parent, "TIẾP NHẬN HỒ SƠ - v2.0 Wizard", true);
         this.parent = parent;
         this.processor = processor;
-        
-        setSize(550, 650);
+
+        setSize(600, 500);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(UIStyle.BACKGROUND_COLOR);
 
-        // --- HEADER ---
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headerPanel.setBackground(UIStyle.PRIMARY_COLOR);
-        headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
-        JLabel headerLabel = new JLabel("NHẬP THÔNG TIN HỒ SƠ");
-        headerLabel.setForeground(Color.WHITE);
-        headerLabel.setFont(UIStyle.BOLD_FONT);
-        headerPanel.add(headerLabel);
-        add(headerPanel, BorderLayout.NORTH);
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Bước 1: Thông tin", createInfoPanel());
+        tabbedPane.addTab("Bước 2: Hồ sơ & Thông báo", createDetailsPanel());
+        add(tabbedPane, BorderLayout.CENTER);
 
-        // --- FORM PANEL ---
-        JPanel formContainer = new JPanel(new GridBagLayout());
-        formContainer.setOpaque(false);
-        formContainer.setBorder(new EmptyBorder(20, 30, 20, 30));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setBackground(Color.WHITE);
+        
+        JButton btnDraft = new JButton("Lưu nháp");
+        UIStyle.applyButtonStyle(btnDraft, UIStyle.SECONDARY_COLOR);
+        btnDraft.addActionListener(e -> submitAction(true));
+
+        JButton btnSubmit = new JButton("Nộp hồ sơ");
+        UIStyle.applyButtonStyle(btnSubmit, UIStyle.PRIMARY_COLOR);
+        btnSubmit.addActionListener(e -> submitAction(false));
+
+        JButton btnCancel = new JButton("Hủy bỏ");
+        UIStyle.applyButtonStyle(btnCancel, UIStyle.DANGER_COLOR);
+        btnCancel.addActionListener(e -> dispose());
+
+        btnPanel.add(btnDraft);
+        btnPanel.add(btnSubmit);
+        btnPanel.add(btnCancel);
+        add(btnPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createInfoPanel() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(Color.WHITE);
+        p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.weightx = 1.0;
 
-        int row = 0;
-
-        // Section: Personal Information
-        addSeparator(formContainer, "Thông tin người nộp", gbc, row++);
+        // Applicant
+        gbc.gridx = 0; gbc.gridy = 0; p.add(new JLabel("Tên người nộp:"), gbc);
+        gbc.gridx = 1; txtApplicantName = new JTextField(20); p.add(txtApplicantName, gbc);
         
-        addField(formContainer, "Tên người nộp:", txtApplicantName = new JTextField(), gbc, row++);
-        addField(formContainer, "Email người nộp:", txtApplicantEmail = new JTextField(), gbc, row++);
-        addField(formContainer, "SĐT người nộp:", txtApplicantPhone = new JTextField(), gbc, row++);
+        gbc.gridx = 0; gbc.gridy = 1; p.add(new JLabel("Email người nộp:"), gbc);
+        gbc.gridx = 1; txtApplicantEmail = new JTextField(20); p.add(txtApplicantEmail, gbc);
 
-        // Section: Officer Information
-        addSeparator(formContainer, "Thông tin cán bộ tiếp nhận", gbc, row++);
-        
-        addField(formContainer, "Tên cán bộ:", txtOfficerName = new JTextField("Cán bộ trực ban"), gbc, row++);
-        addField(formContainer, "Email cán bộ:", txtOfficerEmail = new JTextField("officer@tdtu.edu.vn"), gbc, row++);
-        addField(formContainer, "SĐT cán bộ:", txtOfficerPhone = new JTextField("0123456789"), gbc, row++);
+        gbc.gridx = 0; gbc.gridy = 2; p.add(new JLabel("SĐT người nộp:"), gbc);
+        gbc.gridx = 1; txtApplicantPhone = new JTextField(20); p.add(txtApplicantPhone, gbc);
 
-        // Section: Document Details
-        addSeparator(formContainer, "Chi tiết hồ sơ", gbc, row++);
-        
-        cbDocumentType = new JComboBox<>(new String[]{"DON_XIN_PHEP", "BAO_CAO", "HO_SO_THUE"});
-        addField(formContainer, "Loại hồ sơ:", cbDocumentType, gbc, row++);
-        
-        addField(formContainer, "Chữ ký số:", txtDigitalSignature = new JTextField(), gbc, row++);
+        // Divider
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        p.add(new JSeparator(), gbc);
+        gbc.gridwidth = 1;
 
-        // File Selection
-        JLabel lblFile = new JLabel("Tập tin đính kèm:");
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        formContainer.add(lblFile, gbc);
+        // Officer
+        gbc.gridx = 0; gbc.gridy = 4; p.add(new JLabel("Cán bộ tiếp nhận:"), gbc);
+        gbc.gridx = 1; txtOfficerName = new JTextField("Cán bộ trực ban", 20); p.add(txtOfficerName, gbc);
 
-        JPanel pFile = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        pFile.setOpaque(false);
-        JButton btnFile = new JButton("Duyệt file...");
-        UIStyle.styleButton(btnFile, UIStyle.ACCENT_COLOR, Color.WHITE);
+        gbc.gridx = 0; gbc.gridy = 5; p.add(new JLabel("Email cán bộ:"), gbc);
+        gbc.gridx = 1; txtOfficerEmail = new JTextField("officer@tdtu.edu.vn", 20); p.add(txtOfficerEmail, gbc);
+
+        return p;
+    }
+
+    private JPanel createDetailsPanel() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(Color.WHITE);
+        p.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        gbc.gridx = 0; gbc.gridy = 0; p.add(new JLabel("Loại hồ sơ:"), gbc);
+        cbDocumentType = new JComboBox<>(new String[]{"DON_XIN_PHEP", "BAO_CAO", "HOP_DONG", "KHAC"});
+        gbc.gridx = 1; p.add(cbDocumentType, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; p.add(new JLabel("Mức ưu tiên:"), gbc);
+        cbPriority = new JComboBox<>(new String[]{"0 - Thường", "1 - Khẩn", "2 - Thượng khẩn"});
+        gbc.gridx = 1; p.add(cbPriority, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; p.add(new JLabel("Chữ ký số:"), gbc);
+        txtDigitalSignature = new JTextField(20);
+        gbc.gridx = 1; p.add(txtDigitalSignature, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; p.add(new JLabel("Tệp đính kèm:"), gbc);
+        JPanel filePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        filePanel.setBackground(Color.WHITE);
+        JButton btnBrowse = new JButton("Duyệt file...");
         lblFileName = new JLabel("Chưa chọn tệp");
-        lblFileName.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblFileName.setForeground(UIStyle.TEXT_LIGHT);
-        pFile.add(btnFile); pFile.add(lblFileName);
-        
-        gbc.gridx = 1; gbc.gridy = row; gbc.weightx = 1.0;
-        formContainer.add(pFile, gbc);
-
-        JScrollPane scrollPane = new JScrollPane(formContainer);
-        scrollPane.setBorder(null);
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
-        add(scrollPane, BorderLayout.CENTER);
-
-        // --- BUTTONS ---
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
-        btnPanel.setOpaque(false);
-        JButton btnSend = new JButton("Gửi hồ sơ");
-        JButton btnCancel = new JButton("Hủy bỏ");
-        
-        UIStyle.styleButton(btnSend, UIStyle.PRIMARY_COLOR, Color.WHITE);
-        UIStyle.styleButton(btnCancel, Color.GRAY, Color.WHITE);
-        
-        btnPanel.add(btnCancel);
-        btnPanel.add(btnSend);
-        add(btnPanel, BorderLayout.SOUTH);
-
-        // --- ACTIONS ---
-        btnFile.addActionListener(e -> {
-            JFileChooser fc = new JFileChooser();
-            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                selectedFile = fc.getSelectedFile();
+        lblFileName.setForeground(UIStyle.PRIMARY_COLOR);
+        btnBrowse.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                selectedFile = chooser.getSelectedFile();
                 lblFileName.setText(selectedFile.getName());
-                lblFileName.setForeground(UIStyle.SUCCESS_COLOR);
-                lblFileName.setFont(UIStyle.BOLD_FONT);
             }
         });
+        filePanel.add(btnBrowse);
+        filePanel.add(Box.createHorizontalStrut(10));
+        filePanel.add(lblFileName);
+        gbc.gridx = 1; p.add(filePanel, gbc);
 
-        btnCancel.addActionListener(e -> dispose());
+        // Notifications
+        gbc.gridx = 0; gbc.gridy = 4; p.add(new JLabel("Nhận thông báo:"), gbc);
+        JPanel chkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        chkPanel.setBackground(Color.WHITE);
+        chkEmail = new JCheckBox("Email", true);
+        chkSms = new JCheckBox("SMS");
+        chkApp = new JCheckBox("App Push", true);
+        chkPanel.add(chkEmail); chkPanel.add(chkSms); chkPanel.add(chkApp);
+        gbc.gridx = 1; p.add(chkPanel, gbc);
 
-        btnSend.addActionListener(e -> {
-            submitAction();
-        });
+        return p;
     }
 
-    private void addField(JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        panel.add(new JLabel(label), gbc);
-        
-        gbc.gridx = 1; gbc.gridy = row; gbc.weightx = 1.0;
-        panel.add(field, gbc);
-        
-        if (field instanceof JTextField) {
-            ((JTextField) field).setMargin(new Insets(5, 10, 5, 10));
-        }
-    }
-
-    private void addSeparator(JPanel panel, String text, GridBagConstraints gbc, int row) {
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 0, 10, 0);
-        JLabel label = new JLabel(text);
-        label.setFont(UIStyle.BOLD_FONT);
-        label.setForeground(UIStyle.PRIMARY_COLOR);
-        panel.add(label, gbc);
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
-    }
-
-    private void submitAction() {
+    private void submitAction(boolean isDraft) {
         String filePath = (selectedFile != null) ? selectedFile.getAbsolutePath() : "";
         String ext = "";
         long size = 0;
@@ -158,38 +149,34 @@ public class AddDocumentDialog extends JDialog {
             size = selectedFile.length() / 1024;
             String name = selectedFile.getName();
             int lastDot = name.lastIndexOf('.');
-            if (lastDot > 0) {
-                ext = name.substring(lastDot + 1);
+            if (lastDot >= 0 && lastDot < name.length() - 1) {
+                ext = name.substring(lastDot + 1).toLowerCase().trim();
             }
         }
 
+        List<String> prefs = new ArrayList<>();
+        if (chkEmail.isSelected()) prefs.add("EMAIL");
+        if (chkSms.isSelected()) prefs.add("SMS");
+        if (chkApp.isSelected()) prefs.add("APP");
+
+        int priority = cbPriority.getSelectedIndex();
+
         Document doc = new Document.Builder(UUID.randomUUID().toString().substring(0, 8))
-            .applicantInfo(
-                txtApplicantName.getText().trim(),
-                txtApplicantEmail.getText().trim(),
-                txtApplicantPhone.getText().trim()
-            )
-            .officerInfo(
-                txtOfficerName.getText().trim(),
-                txtOfficerEmail.getText().trim(),
-                txtOfficerPhone.getText().trim()
-            )
-            .documentDetails(
-                cbDocumentType.getSelectedItem().toString(),
-                txtDigitalSignature.getText().trim()
-            )
+            .applicantInfo(txtApplicantName.getText().trim(), txtApplicantEmail.getText().trim(), txtApplicantPhone.getText().trim())
+            .officerInfo(txtOfficerName.getText().trim(), txtOfficerEmail.getText().trim(), txtOfficerPhone.getText().trim())
+            .documentDetails(cbDocumentType.getSelectedItem().toString(), txtDigitalSignature.getText().trim(), priority)
             .fileInfo(filePath, ext, size)
-            .status("MOI_TAO")
+            .notifications(prefs)
+            .isDraft(isDraft)
             .build();
 
         processor.process(doc);
 
-        if ("DANG_XET_DUYET".equals(doc.status)) {
+        if (isDraft || "DANG_XET_DUYET".equals(doc.status)) {
             parent.addDocumentToList(doc);
             dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Hồ sơ không hợp lệ. Vui lòng kiểm tra lại log.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Hồ sơ không hợp lệ. Vui lòng kiểm tra log hệ thống bên dưới.", "Lỗi Kiểm Duyệt", JOptionPane.ERROR_MESSAGE);
         }
     }
-
 }

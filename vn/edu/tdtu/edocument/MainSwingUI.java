@@ -4,236 +4,221 @@ import vn.edu.tdtu.edocument.model.Document;
 import vn.edu.tdtu.edocument.service.DocumentProcessor;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainSwingUI extends JFrame {
-    private JTextArea consoleArea;
-    private JTable documentTable;
+    private JTable table;
     private DefaultTableModel tableModel;
-    private DocumentProcessor processor;
-    private List<Document> documentList;
+    private JTextArea logArea;
+    private final DocumentProcessor processor;
+    private List<Document> documentList = new ArrayList<>();
 
     public MainSwingUI() {
-        UIStyle.applyGlobalStyle();
-        processor = new DocumentProcessor();
-        documentList = new ArrayList<>();
+        this.processor = new DocumentProcessor();
+        setupUI();
+        loadExistingDocuments();
+        setVisible(true);
+    }
 
-        setTitle("Electronic Document Management System - v2.0 Professional");
-        setSize(1100, 800);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private void setupUI() {
+        setTitle("HỆ THỐNG QUẢN LÝ HỒ SƠ ĐIỆN TỬ - v2.0 Professional");
+        setSize(1000, 700);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(UIStyle.BACKGROUND_COLOR);
+        setLayout(new BorderLayout());
 
-        // --- HEADER PANEL ---
+        // Header Panel
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(UIStyle.PRIMARY_COLOR);
-        headerPanel.setPreferredSize(new Dimension(0, 70));
-        headerPanel.setBorder(new EmptyBorder(0, 20, 0, 20));
-
+        headerPanel.setPreferredSize(new Dimension(0, 80));
+        
         JLabel titleLabel = new JLabel("E-DOCUMENT MANAGER");
-        titleLabel.setFont(UIStyle.TITLE_FONT);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-
-        JLabel subTitleLabel = new JLabel("Version 2.0 | Advanced Management System");
-        subTitleLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        subTitleLabel.setForeground(new Color(200, 230, 255));
-        headerPanel.add(subTitleLabel, BorderLayout.SOUTH);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 0, 0));
         
-        add(headerPanel, BorderLayout.NORTH);
-
-        // --- CENTER CONTENT ---
-        JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
-        contentPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
-
-        // Toolbar
-        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        toolBar.setOpaque(false);
-        JButton btnAdd = new JButton(" Tiếp nhận hồ sơ");
-        JButton btnClear = new JButton("Xóa nhật ký");
+        JLabel subTitleLabel = new JLabel("Version 2.0 | Advanced Management System (Wizard Mode)");
+        subTitleLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+        subTitleLabel.setForeground(new Color(200, 200, 200));
+        subTitleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 0));
         
-        UIStyle.styleButton(btnAdd, UIStyle.SUCCESS_COLOR, Color.WHITE);
-        UIStyle.styleButton(btnClear, UIStyle.DANGER_COLOR, Color.WHITE);
+        headerPanel.add(titleLabel, BorderLayout.NORTH);
+        headerPanel.add(subTitleLabel, BorderLayout.CENTER);
+
+        // Action Panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        JButton btnAdd = new JButton("Tiếp nhận hồ sơ");
+        UIStyle.applyButtonStyle(btnAdd, UIStyle.SUCCESS_COLOR);
+        btnAdd.addActionListener(e -> new AddDocumentDialog(this, processor).setVisible(true));
+
+        JButton btnConfig = new JButton("Cấu hình hệ thống");
+        UIStyle.applyButtonStyle(btnConfig, UIStyle.PRIMARY_COLOR);
+        btnConfig.addActionListener(e -> showConfigDialog());
+
+        JButton btnClearLog = new JButton("Xóa nhật ký");
+        UIStyle.applyButtonStyle(btnClearLog, UIStyle.DANGER_COLOR);
+        btnClearLog.addActionListener(e -> logArea.setText(""));
+
+        actionPanel.add(btnAdd);
+        actionPanel.add(btnConfig);
+        actionPanel.add(btnClearLog);
+
+        JPanel topContainer = new JPanel(new BorderLayout());
+        topContainer.add(headerPanel, BorderLayout.NORTH);
+        topContainer.add(actionPanel, BorderLayout.CENTER);
+        add(topContainer, BorderLayout.NORTH);
+
+        // Table Panel
+        String[] columns = {"Mã hồ sơ", "Người nộp", "Loại hồ sơ", "Mức ưu tiên", "Trạng thái", "Tập tin"};
+        tableModel = new DefaultTableModel(columns, 0);
+        table = new JTable(tableModel);
+        UIStyle.applyTableStyle(table);
         
-        toolBar.add(btnAdd);
-        toolBar.add(btnClear);
-        contentPanel.add(toolBar, BorderLayout.NORTH);
+        JScrollPane tableScrollPane = new JScrollPane(table);
+        tableScrollPane.setBorder(BorderFactory.createTitledBorder("Danh sách hồ sơ đang xử lý & bản nháp"));
+        add(tableScrollPane, BorderLayout.CENTER);
 
-        // Table
-        String[] columnNames = {"Mã hồ sơ", "Người nộp", "Loại hồ sơ", "Trạng thái", "Tập tin"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        };
-        documentTable = new JTable(tableModel);
-        UIStyle.styleTable(documentTable);
+        // Log Panel
+        logArea = new JTextArea(10, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(new Color(30, 30, 30));
+        logArea.setForeground(Color.WHITE);
+        logArea.setFont(new Font("Consolas", Font.PLAIN, 13));
         
-        JScrollPane tableScrollPane = new JScrollPane(documentTable);
-        tableScrollPane.setBorder(UIStyle.createSectionBorder("Danh sách hồ sơ đang xử lý"));
-        tableScrollPane.getViewport().setBackground(Color.WHITE);
+        PrintStream printStream = new PrintStream(new CustomOutputStream(logArea));
+        System.setOut(printStream);
+        System.setErr(printStream);
 
-        // Console
-        consoleArea = new JTextArea();
-        consoleArea.setEditable(false);
-        consoleArea.setBackground(UIStyle.CONSOLE_BG);
-        consoleArea.setForeground(new Color(171, 178, 191)); // One Dark theme text color
-        consoleArea.setFont(UIStyle.CONSOLE_FONT);
-        consoleArea.setMargin(new Insets(10, 10, 10, 10));
-        
-        JScrollPane logScrollPane = new JScrollPane(consoleArea);
-        logScrollPane.setBorder(UIStyle.createSectionBorder("Nhật ký hệ thống (Real-time Logs)"));
+        JScrollPane logScrollPane = new JScrollPane(logArea);
+        logScrollPane.setBorder(BorderFactory.createTitledBorder("Nhật ký hệ thống (Real-time Logs)"));
+        add(logScrollPane, BorderLayout.SOUTH);
+    }
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableScrollPane, logScrollPane);
-        splitPane.setDividerLocation(350);
-        splitPane.setBorder(null);
-        splitPane.setOpaque(false);
-        
-        contentPanel.add(splitPane, BorderLayout.CENTER);
-        add(contentPanel, BorderLayout.CENTER);
+    private void showConfigDialog() {
+        JDialog config = new JDialog(this, "Cấu hình Hệ thống (Runtime Patterns)", true);
+        config.setSize(400, 300);
+        config.setLayout(new GridBagLayout());
+        config.setLocationRelativeTo(this);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 10, 10, 10);
 
-        redirectSystemStreams();
-        loadExistingDocuments();
-        refreshTable();
+        gbc.gridx = 0; gbc.gridy = 0; config.add(new JLabel("Kho lưu trữ:"), gbc);
+        JComboBox<String> cbRepo = new JComboBox<>(new String[]{"Local JSON", "SQL Database", "AWS S3 Cloud"});
+        gbc.gridx = 1; config.add(cbRepo, gbc);
 
-        btnAdd.addActionListener(e -> {
-            AddDocumentDialog dialog = new AddDocumentDialog(this, processor);
-            dialog.setVisible(true);
-            refreshTable();
-        });
+        gbc.gridx = 0; gbc.gridy = 1; config.add(new JLabel("Chuỗi kiểm duyệt:"), gbc);
+        JComboBox<String> cbChain = new JComboBox<>(new String[]{"Mặc định (Dung lượng->Virus->Trùng)", "Rút gọn (Dung lượng->Trùng)", "Đảo ngược (Trùng->Virus->Dung lượng)"});
+        gbc.gridx = 1; config.add(cbChain, gbc);
 
-        btnClear.addActionListener(e -> consoleArea.setText(""));
+        JButton btnSave = new JButton("Áp dụng cấu hình");
+        UIStyle.applyButtonStyle(btnSave, UIStyle.PRIMARY_COLOR);
+        btnSave.addActionListener(e -> {
+            // Demo switching Repository
+            int repoIdx = cbRepo.getSelectedIndex();
+            if (repoIdx == 1) processor.setRepository(new vn.edu.tdtu.edocument.service.persistence.SqlDatabaseRepository());
+            else if (repoIdx == 2) processor.setRepository(new vn.edu.tdtu.edocument.service.persistence.CloudS3Repository());
+            else processor.setRepository(new vn.edu.tdtu.edocument.service.persistence.LocalJsonRepository());
 
-        documentTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && documentTable.getSelectedRow() != -1) {
-                int selectedRow = documentTable.getSelectedRow();
-                String docId = tableModel.getValueAt(selectedRow, 0).toString();
-                
-                for (Document doc : documentList) {
-                    if (doc.id.equals(docId)) {
-                        System.out.println("\n\u001B[34m[THÔNG TIN CHI TIẾT] ID: " + doc.id + "\u001B[0m");
-                        System.out.println("  > Người nộp: " + doc.applicantName + " (" + doc.applicantEmail + ")");
-                        System.out.println("  > Cán bộ:    " + doc.officerName);
-                        System.out.println("  > Loại:      " + doc.documentType);
-                        System.out.println("  > Tệp tin:   " + doc.filePath + " (" + doc.fileSizeKB + " KB)");
-                        System.out.println("  > Trạng thái: " + doc.status);
-                        System.out.println("----------------------------------------\n");
-                        break;
-                    }
-                }
+            // Demo switching Chain
+            int chainIdx = cbChain.getSelectedIndex();
+            vn.edu.tdtu.edocument.service.validation.ValidationHandler basic = new vn.edu.tdtu.edocument.service.validation.BasicValidationHandler();
+            vn.edu.tdtu.edocument.service.validation.ValidationHandler antivirus = new vn.edu.tdtu.edocument.service.validation.AntivirusHandler();
+            vn.edu.tdtu.edocument.service.validation.ValidationHandler integrity = new vn.edu.tdtu.edocument.service.validation.IntegrityHandler();
+            
+            if (chainIdx == 1) { // Rút gọn
+                basic.setNext(integrity);
+                processor.setValidationChain(basic);
+            } else if (chainIdx == 2) { // Đảo ngược
+                integrity.setNext(antivirus);
+                antivirus.setNext(basic);
+                processor.setValidationChain(integrity);
+            } else { // Mặc định
+                basic.setNext(antivirus);
+                antivirus.setNext(integrity);
+                processor.setValidationChain(basic);
             }
+            
+            JOptionPane.showMessageDialog(config, "Đã cập nhật cấu hình hệ thống tại Runtime!");
+            config.dispose();
+        });
+        
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        config.add(btnSave, gbc);
+        config.setVisible(true);
+    }
+
+    public void addDocumentToList(Document doc) {
+        documentList.add(doc);
+        String priorityText = doc.priority == 2 ? "Thượng khẩn" : (doc.priority == 1 ? "Khẩn" : "Thường");
+        tableModel.addRow(new Object[]{
+            doc.id, doc.applicantName, doc.documentType, priorityText, doc.status, doc.fileExtension
         });
     }
 
     private void loadExistingDocuments() {
-        File storageDir = new File("server_storage");
-        if (storageDir.exists() && storageDir.isDirectory()) {
-            File[] files = storageDir.listFiles((dir, name) -> name.endsWith("_data.json"));
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        String content = new String(Files.readAllBytes(file.toPath()));
-                        Document doc = parseJsonToDocument(content);
-                        if (doc != null) {
-                            documentList.add(doc);
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[LỖI] Không thể nạp hồ sơ: " + file.getName());
-                    }
-                }
+        File dir = new File("server_storage");
+        if (!dir.exists()) return;
+        
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return;
+
+        for (File f : files) {
+            try {
+                String content = new String(Files.readAllBytes(f.toPath()));
+                // Sơ đồ nạp đơn giản (Mô phỏng nạp từ JSON)
+                String id = extractValue(content, "id");
+                String name = extractValue(content, "applicantName");
+                String type = extractValue(content, "documentType");
+                String status = extractValue(content, "status");
+                String ext = extractValue(content, "fileExtension");
+                String pStr = extractValue(content, "priority");
+                int priority = Integer.parseInt(pStr.isEmpty() ? "0" : pStr);
+                
+                String priorityText = priority == 2 ? "Thượng khẩn" : (priority == 1 ? "Khẩn" : "Thường");
+                tableModel.addRow(new Object[]{id, name, type, priorityText, status, ext});
+            } catch (Exception e) {
+                // Skip invalid files
             }
-        }
-    }
-
-    private Document parseJsonToDocument(String json) {
-        try {
-            String id = extractValue(json, "id");
-            String applicantName = extractValue(json, "applicantName");
-            String applicantEmail = extractValue(json, "applicantEmail");
-            String applicantPhone = extractValue(json, "applicantPhone");
-            String officerName = extractValue(json, "officerName");
-            String officerEmail = extractValue(json, "officerEmail");
-            String officerPhone = extractValue(json, "officerPhone");
-            String documentType = extractValue(json, "documentType");
-            String filePath = extractValue(json, "filePath");
-            String fileExtension = extractValue(json, "fileExtension");
-            String fileSizeStr = extractValue(json, "fileSizeKB");
-            long fileSizeKB = (fileSizeStr != null && !fileSizeStr.isEmpty()) ? Long.parseLong(fileSizeStr) : 0;
-            String digitalSignature = extractValue(json, "digitalSignature");
-            String status = extractValue(json, "status");
-
-            return new Document(id, applicantName, applicantEmail, applicantPhone,
-                    officerName, officerEmail, officerPhone, documentType,
-                    filePath, fileExtension, fileSizeKB, digitalSignature, null, status);
-        } catch (Exception e) {
-            return null;
         }
     }
 
     private String extractValue(String json, String key) {
-        try {
-            String pattern = "\"" + key + "\": ";
-            int start = json.indexOf(pattern);
+        String pattern = "\"" + key + "\": \"";
+        int start = json.indexOf(pattern);
+        if (start == -1) {
+            // Try numeric
+            pattern = "\"" + key + "\": ";
+            start = json.indexOf(pattern);
             if (start == -1) return "";
             start += pattern.length();
-            if (json.charAt(start) == '\"') {
-                start++;
-                int end = json.indexOf("\"", start);
-                return json.substring(start, end);
-            } else {
-                int end = json.indexOf(",", start);
-                if (end == -1) end = json.indexOf("\n", start);
-                if (end == -1) end = json.indexOf("}", start);
-                return json.substring(start, end).trim();
-            }
-        } catch (Exception e) {
-            return "";
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("\n", start);
+            if (end == -1) end = json.indexOf("}", start);
+            return json.substring(start, end).trim().replace("\"", "");
         }
-    }
-
-    public void addDocumentToList(Document doc) {
-        if (!documentList.contains(doc)) {
-            documentList.add(doc);
-        }
-    }
-
-    private void refreshTable() {
-        tableModel.setRowCount(0);
-        for (Document doc : documentList) {
-            tableModel.addRow(new Object[]{
-                doc.id, doc.applicantName, doc.documentType, doc.status, doc.fileExtension
-            });
-        }
-    }
-
-    private void redirectSystemStreams() {
-        OutputStream out = new OutputStream() {
-            @Override public void write(int b) { updateTextArea(String.valueOf((char) b)); }
-            @Override public void write(byte[] b, int off, int len) { updateTextArea(new String(b, off, len)); }
-        };
-        System.setOut(new PrintStream(out, true));
-        System.setErr(new PrintStream(out, true));
-    }
-
-    private void updateTextArea(final String text) {
-        SwingUtilities.invokeLater(() -> {
-            consoleArea.append(text);
-            consoleArea.setCaretPosition(consoleArea.getDocument().getLength());
-        });
+        start += pattern.length();
+        int end = json.indexOf("\"", start);
+        return json.substring(start, end);
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            MainSwingUI frame = new MainSwingUI();
-            frame.setVisible(true);
-        });
+        SwingUtilities.invokeLater(MainSwingUI::new);
     }
 
+    static class CustomOutputStream extends java.io.OutputStream {
+        private JTextArea textArea;
+        public CustomOutputStream(JTextArea textArea) { this.textArea = textArea; }
+        @Override
+        public void write(int b) {
+            textArea.append(String.valueOf((char) b));
+            textArea.setCaretPosition(textArea.getDocument().getLength());
+        }
+    }
 }

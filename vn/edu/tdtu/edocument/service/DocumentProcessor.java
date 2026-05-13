@@ -14,29 +14,41 @@ public class DocumentProcessor {
     private DocumentRepository repository;
 
     public DocumentProcessor() {
-        // --- 1. THIẾT LẬP CHAIN OF RESPONSIBILITY (Yêu cầu 3) ---
-        ValidationHandler basic = new BasicValidationHandler();
-        ValidationHandler antivirus = new AntivirusHandler();
-        ValidationHandler integrity = new IntegrityHandler();
-        
-        basic.setNext(antivirus);
-        antivirus.setNext(integrity);
-        this.validationChain = basic;
-
-        // --- 2. THIẾT LẬP OBSERVER PATTERN (Yêu cầu 4) ---
         this.notificationService = new NotificationService();
         notificationService.subscribe(new EmailNotification());
         notificationService.subscribe(new SMSNotification());
         notificationService.subscribe(new AppPushNotification());
 
-        // --- 3. THIẾT LẬP REPOSITORY/ADAPTER (Yêu cầu 5) ---
-        // Có thể dễ dàng thay đổi giữa LocalJsonRepository, SqlDatabaseRepository, CloudS3Repository
+        // Default configuration
+        setupDefaultChain();
         this.repository = new LocalJsonRepository();
     }
 
+    private void setupDefaultChain() {
+        ValidationHandler basic = new BasicValidationHandler();
+        ValidationHandler antivirus = new AntivirusHandler();
+        ValidationHandler integrity = new IntegrityHandler();
+        basic.setNext(antivirus);
+        antivirus.setNext(integrity);
+        this.validationChain = basic;
+    }
+
+    // Yêu cầu 3 & 5: Cấu hình linh hoạt tại Runtime
+    public void setValidationChain(ValidationHandler chain) { this.validationChain = chain; }
+    public void setRepository(DocumentRepository repo) { this.repository = repo; }
+    public DocumentRepository getRepository() { return this.repository; }
+
     public void process(Document doc) {
         System.out.println("\n=======================================================");
-        System.out.println("BẮT ĐẦU XỬ LÝ HỒ SƠ ID: " + doc.id);
+        if (doc.isDraft) {
+            System.out.println("LƯU NHÁP HỒ SƠ ID: " + doc.id);
+            doc.status = "NHAP";
+            repository.save(doc);
+            System.out.println("[OK] Đã lưu nháp.");
+            return;
+        }
+
+        System.out.println("BẮT ĐẦU XỬ LÝ HỒ SƠ CHÍNH THỨC ID: " + doc.id);
 
         if (!isInfoComplete(doc)) {
             System.err.println("[LỖI TIẾP NHẬN] Thiếu trường thông tin bắt buộc.");
@@ -47,7 +59,7 @@ public class DocumentProcessor {
         notificationService.notifyObservers(doc);
 
         // --- BƯỚC 1: KIỂM DUYỆT LINH HOẠT (Chain of Responsibility) ---
-        if (!validationChain.validate(doc)) {
+        if (validationChain != null && !validationChain.validate(doc)) {
             doc.status = "TU_CHOI";
             System.err.println("[KẾT QUẢ] Hồ sơ bị từ chối ở bước kiểm duyệt.");
             notificationService.notifyObservers(doc);

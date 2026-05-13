@@ -1,0 +1,15 @@
+{
+  "id": "9e0baee3",
+  "applicantName": "thang",
+  "applicantEmail": "thang@gmail.com",
+  "applicantPhone": "1234567890",
+  "officerName": "Cán bộ trực ban",
+  "officerEmail": "officer@tdtu.edu.vn",
+  "officerPhone": "0123456789",
+  "documentType": "DON_XIN_PHEP",
+  "filePath": "server_storage\\9e0baee3_Chap 1a - Introduction to ML-2023.pdf",
+  "fileExtension": "pdf",
+  "fileSizeKB": 4299,
+  "digitalSignature": "thang",
+  "status": "DA_XU_LY"
+}

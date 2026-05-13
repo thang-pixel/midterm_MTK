@@ -38,10 +38,14 @@ public class LocalJsonRepository implements DocumentRepository {
                     "  \"fileExtension\": \"" + doc.fileExtension + "\",\n" +
                     "  \"fileSizeKB\": " + doc.fileSizeKB + ",\n" +
                     "  \"digitalSignature\": \"" + doc.digitalSignature + "\",\n" +
+                    "  \"priority\": " + doc.priority + ",\n" +
+                    "  \"notificationPreferences\": \"" + String.join(",", doc.notificationPreferences) + "\",\n" +
+                    "  \"isDraft\": " + doc.isDraft + ",\n" +
                     "  \"status\": \"" + doc.status + "\"\n" +
                     "}";
 
-            File dataFile = new File(storageDirPath + File.separator + doc.id + "_data.json");
+            String suffix = doc.isDraft ? "_draft.json" : "_data.json";
+            File dataFile = new File(storageDirPath + File.separator + doc.id + suffix);
             try (FileWriter writer = new FileWriter(dataFile)) {
                 writer.write(json);
             }

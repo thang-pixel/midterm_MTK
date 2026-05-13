@@ -1,5 +1,8 @@
 package vn.edu.tdtu.edocument.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Document {
     public String id;
     public String applicantName;
@@ -15,6 +18,11 @@ public class Document {
     public String digitalSignature;
     public String extractedContent;
     public String status;
+    
+    // Yêu cầu v2.0 & v1.0 bổ sung
+    public int priority; // 0: Thường, 1: Khẩn, 2: Thượng khẩn
+    public List<String> notificationPreferences; // "EMAIL", "SMS", "APP"
+    public boolean isDraft;
 
     private Document(Builder builder) {
         this.id = builder.id;
@@ -31,44 +39,29 @@ public class Document {
         this.digitalSignature = builder.digitalSignature;
         this.extractedContent = builder.extractedContent;
         this.status = builder.status;
-    }
-
-    // Default constructor for backward compatibility if needed, but better use Builder
-    public Document(String id, String applicantName, String applicantEmail, String applicantPhone,
-                    String officerName, String officerEmail, String officerPhone,
-                    String documentType, String filePath, String fileExtension, 
-                    long fileSizeKB, String digitalSignature, String extractedContent, String status) {
-        this.id = id;
-        this.applicantName = applicantName;
-        this.applicantEmail = applicantEmail;
-        this.applicantPhone = applicantPhone;
-        this.officerName = officerName;
-        this.officerEmail = officerEmail;
-        this.officerPhone = officerPhone;
-        this.documentType = documentType;
-        this.filePath = filePath;
-        this.fileExtension = fileExtension;
-        this.fileSizeKB = fileSizeKB;
-        this.digitalSignature = digitalSignature;
-        this.extractedContent = extractedContent;
-        this.status = status;
+        this.priority = builder.priority;
+        this.notificationPreferences = builder.notificationPreferences;
+        this.isDraft = builder.isDraft;
     }
 
     public static class Builder {
         private String id;
-        private String applicantName;
-        private String applicantEmail;
-        private String applicantPhone;
-        private String officerName;
-        private String officerEmail;
-        private String officerPhone;
-        private String documentType;
-        private String filePath;
-        private String fileExtension;
-        private long fileSizeKB;
-        private String digitalSignature;
-        private String extractedContent;
+        private String applicantName = "";
+        private String applicantEmail = "";
+        private String applicantPhone = "";
+        private String officerName = "Cán bộ trực ban";
+        private String officerEmail = "officer@tdtu.edu.vn";
+        private String officerPhone = "0123456789";
+        private String documentType = "";
+        private String filePath = "";
+        private String fileExtension = "";
+        private long fileSizeKB = 0;
+        private String digitalSignature = "";
+        private String extractedContent = "";
         private String status = "MOI_TAO";
+        private int priority = 0;
+        private List<String> notificationPreferences = new ArrayList<>();
+        private boolean isDraft = false;
 
         public Builder(String id) {
             this.id = id;
@@ -88,9 +81,10 @@ public class Document {
             return this;
         }
 
-        public Builder documentDetails(String type, String signature) {
+        public Builder documentDetails(String type, String signature, int priority) {
             this.documentType = type;
             this.digitalSignature = signature;
+            this.priority = priority;
             return this;
         }
 
@@ -101,13 +95,18 @@ public class Document {
             return this;
         }
 
+        public Builder notifications(List<String> prefs) {
+            this.notificationPreferences = prefs;
+            return this;
+        }
+
         public Builder status(String status) {
             this.status = status;
             return this;
         }
 
-        public Builder extractedContent(String content) {
-            this.extractedContent = content;
+        public Builder isDraft(boolean draft) {
+            this.isDraft = draft;
             return this;
         }
 
