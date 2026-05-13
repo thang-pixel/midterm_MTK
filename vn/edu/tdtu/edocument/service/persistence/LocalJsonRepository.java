@@ -21,9 +21,18 @@ public class LocalJsonRepository implements DocumentRepository {
         }
 
         try {
-            Path sourcePath = Paths.get(doc.filePath);
-            Path targetPath = Paths.get(storageDirPath + File.separator + doc.id + "_" + sourcePath.getFileName().toString());
-            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            String finalTargetFilePath = "";
+            
+            // Chỉ thực hiện copy file nếu đường dẫn file không rỗng và file tồn tại
+            if (doc.filePath != null && !doc.filePath.isEmpty()) {
+                java.io.File sourceFile = new java.io.File(doc.filePath);
+                if (sourceFile.exists()) {
+                    Path sourcePath = Paths.get(doc.filePath);
+                    Path targetPath = Paths.get(storageDirPath + File.separator + doc.id + "_" + sourcePath.getFileName().toString());
+                    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    finalTargetFilePath = targetPath.toString().replace("\\", "\\\\");
+                }
+            }
 
             String json = "{\n" +
                     "  \"id\": \"" + doc.id + "\",\n" +
@@ -34,7 +43,7 @@ public class LocalJsonRepository implements DocumentRepository {
                     "  \"officerEmail\": \"" + doc.officerEmail + "\",\n" +
                     "  \"officerPhone\": \"" + doc.officerPhone + "\",\n" +
                     "  \"documentType\": \"" + doc.documentType + "\",\n" +
-                    "  \"filePath\": \"" + targetPath.toString().replace("\\", "\\\\") + "\",\n" +
+                    "  \"filePath\": \"" + finalTargetFilePath + "\",\n" +
                     "  \"fileExtension\": \"" + doc.fileExtension + "\",\n" +
                     "  \"fileSizeKB\": " + doc.fileSizeKB + ",\n" +
                     "  \"digitalSignature\": \"" + doc.digitalSignature + "\",\n" +
@@ -52,7 +61,7 @@ public class LocalJsonRepository implements DocumentRepository {
             System.out.println("  [OK] Đã lưu tệp JSON: " + dataFile.getName());
 
         } catch (IOException e) {
-            System.err.println("  [LỖI] Lỗi khi lưu trữ Local JSON: " + e.getMessage());
+            System.err.println("  [LỖI] Lỗi khi lưu trữ: " + e.getMessage());
         }
     }
 }
