@@ -6,5 +6,5 @@ java vn.edu.tdtu.edocument.MainSwingUI
 
 
 Get-ChildItem -Path . -Include *.class -Recurse | Remove-Item
-javac vn/edu/tdtu/edocument/*.java vn/edu/tdtu/edocument/model/*.java vn/edu/tdtu/edocument/service/*.java
-java vn.edu.tdtu.edocument.MainSwingUI
+javac -d . vn/edu/tdtu/edocument/*.java vn/edu/tdtu/edocument/model/*.java vn/edu/tdtu/edocument/service/*.java vn/edu/tdtu/edocument/service/strategy/*.java vn/edu/tdtu/edocument/service/validation/*.java vn/edu/tdtu/edocument/service/notification/*.java vn/edu/tdtu/edocument/service/persistence/*.java
+java vn.edu.tdtu.edocument.MainSwingUI    
