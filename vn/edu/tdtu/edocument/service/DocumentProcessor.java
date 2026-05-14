@@ -35,6 +35,43 @@ public class DocumentProcessor {
 
     // Yêu cầu 3 & 5: Cấu hình linh hoạt tại Runtime
     public void setValidationChain(ValidationHandler chain) { this.validationChain = chain; }
+    
+    /**
+     * NÂNG CẤP YÊU CẦU 3: Cơ chế cấu hình mở hoàn toàn cho quy trình kiểm duyệt.
+     * Cho phép lắp ghép bất kỳ thứ tự nào dựa trên danh sách tên Handler (có thể đọc từ file config).
+     */
+    public void configureChain(java.util.List<String> handlerNames) {
+        if (handlerNames == null || handlerNames.isEmpty()) return;
+        
+        System.out.println("[CONFIG] Thiết lập chuỗi kiểm duyệt động: " + String.join(" -> ", handlerNames));
+        
+        ValidationHandler first = null;
+        ValidationHandler current = null;
+
+        for (String name : handlerNames) {
+            ValidationHandler handler = createHandlerByName(name);
+            if (handler != null) {
+                if (first == null) {
+                    first = handler;
+                    current = first;
+                } else {
+                    current.setNext(handler);
+                    current = handler;
+                }
+            }
+        }
+        this.validationChain = first;
+    }
+
+    private ValidationHandler createHandlerByName(String name) {
+        switch (name.toUpperCase().trim()) {
+            case "BASIC": return new BasicValidationHandler();
+            case "ANTIVIRUS": return new AntivirusHandler();
+            case "INTEGRITY": return new IntegrityHandler();
+            default: return null;
+        }
+    }
+
     public void setRepository(DocumentRepository repo) { this.repository = repo; }
     public DocumentRepository getRepository() { return this.repository; }
 

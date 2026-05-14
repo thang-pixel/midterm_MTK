@@ -243,10 +243,16 @@ public class MainSwingUI extends JFrame {
             String draftStr = extractValue(content, "isDraft");
             boolean isDraft = Boolean.parseBoolean(draftStr);
 
-            String prefsStr = extractValue(content, "notificationPreferences");
-            List<String> prefs = new ArrayList<>();
-            if (!prefsStr.isEmpty()) {
-                for (String p : prefsStr.split(",")) prefs.add(p.trim());
+            String appPrefsStr = extractValue(content, "applicantPrefs");
+            List<String> appPrefs = new ArrayList<>();
+            if (!appPrefsStr.isEmpty()) {
+                for (String p : appPrefsStr.split(",")) appPrefs.add(p.trim());
+            }
+
+            String offPrefsStr = extractValue(content, "officerPrefs");
+            List<String> offPrefs = new ArrayList<>();
+            if (!offPrefsStr.isEmpty()) {
+                for (String p : offPrefsStr.split(",")) offPrefs.add(p.trim());
             }
 
             return new Document.Builder(id)
@@ -254,7 +260,8 @@ public class MainSwingUI extends JFrame {
                 .officerInfo(offName, offEmail, offPhone)
                 .documentDetails(type, sig, priority)
                 .fileInfo(path, ext, 0)
-                .notifications(prefs)
+                .applicantPrefs(appPrefs)
+                .officerPrefs(offPrefs)
                 .status(status)
                 .isDraft(isDraft)
                 .build();

@@ -36,11 +36,9 @@ public class LocalJsonRepository implements DocumentRepository {
                 }
             }
 
-            // Đảm bảo notificationPreferences không null
-            String prefsStr = "";
-            if (doc.notificationPreferences != null) {
-                prefsStr = String.join(",", doc.notificationPreferences);
-            }
+            // Đảm bảo preferences không null
+            String appPrefsStr = doc.applicantPrefs != null ? String.join(",", doc.applicantPrefs) : "";
+            String offPrefsStr = doc.officerPrefs != null ? String.join(",", doc.officerPrefs) : "";
 
             String json = "{\n" +
                     "  \"id\": \"" + doc.id + "\",\n" +
@@ -56,7 +54,8 @@ public class LocalJsonRepository implements DocumentRepository {
                     "  \"fileSizeKB\": " + doc.fileSizeKB + ",\n" +
                     "  \"digitalSignature\": \"" + doc.digitalSignature + "\",\n" +
                     "  \"priority\": " + doc.priority + ",\n" +
-                    "  \"notificationPreferences\": \"" + prefsStr + "\",\n" +
+                    "  \"applicantPrefs\": \"" + appPrefsStr + "\",\n" +
+                    "  \"officerPrefs\": \"" + offPrefsStr + "\",\n" +
                     "  \"isDraft\": " + doc.isDraft + ",\n" +
                     "  \"status\": \"" + doc.status + "\"\n" +
                     "}";

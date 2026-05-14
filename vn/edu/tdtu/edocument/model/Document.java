@@ -21,7 +21,8 @@ public class Document {
     
     // Yêu cầu v2.0 & v1.0 bổ sung
     public int priority; // 0: Thường, 1: Khẩn, 2: Thượng khẩn
-    public List<String> notificationPreferences; // "EMAIL", "SMS", "APP"
+    public List<String> applicantPrefs; // "EMAIL", "SMS", "APP"
+    public List<String> officerPrefs;   // "EMAIL", "SMS", "APP"
     public boolean isDraft;
 
     private Document(Builder builder) {
@@ -40,7 +41,8 @@ public class Document {
         this.extractedContent = builder.extractedContent;
         this.status = builder.status;
         this.priority = builder.priority;
-        this.notificationPreferences = builder.notificationPreferences;
+        this.applicantPrefs = builder.applicantPrefs;
+        this.officerPrefs = builder.officerPrefs;
         this.isDraft = builder.isDraft;
     }
 
@@ -60,7 +62,8 @@ public class Document {
         private String extractedContent = "";
         private String status = "MOI_TAO";
         private int priority = 0;
-        private List<String> notificationPreferences = new ArrayList<>();
+        private List<String> applicantPrefs = new ArrayList<>();
+        private List<String> officerPrefs = new ArrayList<>();
         private boolean isDraft = false;
 
         public Builder(String id) {
@@ -95,8 +98,13 @@ public class Document {
             return this;
         }
 
-        public Builder notifications(List<String> prefs) {
-            this.notificationPreferences = prefs;
+        public Builder applicantPrefs(List<String> prefs) {
+            this.applicantPrefs = prefs;
+            return this;
+        }
+
+        public Builder officerPrefs(List<String> prefs) {
+            this.officerPrefs = prefs;
             return this;
         }
 

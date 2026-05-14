@@ -16,7 +16,8 @@ public class AddDocumentDialog extends JDialog {
     private JComboBox<String> cbDocumentType, cbPriority;
     private JTextField txtDigitalSignature;
     private JLabel lblFileName;
-    private JCheckBox chkEmail, chkSms, chkApp;
+    private JCheckBox chkAppEmail, chkAppSms, chkAppPush;
+    private JCheckBox chkOffEmail, chkOffSms, chkOffPush;
     
     private File selectedFile;
     private final DocumentProcessor processor;
@@ -79,10 +80,15 @@ public class AddDocumentDialog extends JDialog {
             selectedFile = new File(doc.filePath);
             lblFileName.setText(selectedFile.getName());
         }
-        if (doc.notificationPreferences != null) {
-            chkEmail.setSelected(doc.notificationPreferences.contains("EMAIL"));
-            chkSms.setSelected(doc.notificationPreferences.contains("SMS"));
-            chkApp.setSelected(doc.notificationPreferences.contains("APP"));
+        if (doc.applicantPrefs != null) {
+            chkAppEmail.setSelected(doc.applicantPrefs.contains("EMAIL"));
+            chkAppSms.setSelected(doc.applicantPrefs.contains("SMS"));
+            chkAppPush.setSelected(doc.applicantPrefs.contains("APP"));
+        }
+        if (doc.officerPrefs != null) {
+            chkOffEmail.setSelected(doc.officerPrefs.contains("EMAIL"));
+            chkOffSms.setSelected(doc.officerPrefs.contains("SMS"));
+            chkOffPush.setSelected(doc.officerPrefs.contains("APP"));
         }
     }
 
@@ -160,15 +166,24 @@ public class AddDocumentDialog extends JDialog {
         filePanel.add(lblFileName);
         gbc.gridx = 1; p.add(filePanel, gbc);
 
-        // Notifications
-        gbc.gridx = 0; gbc.gridy = 4; p.add(new JLabel("Nhận thông báo:"), gbc);
-        JPanel chkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        chkPanel.setBackground(Color.WHITE);
-        chkEmail = new JCheckBox("Email", true);
-        chkSms = new JCheckBox("SMS");
-        chkApp = new JCheckBox("App Push", true);
-        chkPanel.add(chkEmail); chkPanel.add(chkSms); chkPanel.add(chkApp);
-        gbc.gridx = 1; p.add(chkPanel, gbc);
+        // Notifications - YÊU CẦU 4 NÂNG CẤP
+        gbc.gridx = 0; gbc.gridy = 4; p.add(new JLabel("Thông báo Người nộp:"), gbc);
+        JPanel appChkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        appChkPanel.setBackground(Color.WHITE);
+        chkAppEmail = new JCheckBox("Email", true);
+        chkAppSms = new JCheckBox("SMS");
+        chkAppPush = new JCheckBox("App Push", true);
+        appChkPanel.add(chkAppEmail); appChkPanel.add(chkAppSms); appChkPanel.add(chkAppPush);
+        gbc.gridx = 1; p.add(appChkPanel, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 5; p.add(new JLabel("Thông báo Cán bộ:"), gbc);
+        JPanel offChkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        offChkPanel.setBackground(Color.WHITE);
+        chkOffEmail = new JCheckBox("Email", true);
+        chkOffSms = new JCheckBox("SMS", true);
+        chkOffPush = new JCheckBox("App Push");
+        offChkPanel.add(chkOffEmail); offChkPanel.add(chkOffSms); offChkPanel.add(chkOffPush);
+        gbc.gridx = 1; p.add(offChkPanel, gbc);
 
         return p;
     }
@@ -186,10 +201,15 @@ public class AddDocumentDialog extends JDialog {
             }
         }
 
-        List<String> prefs = new ArrayList<>();
-        if (chkEmail.isSelected()) prefs.add("EMAIL");
-        if (chkSms.isSelected()) prefs.add("SMS");
-        if (chkApp.isSelected()) prefs.add("APP");
+        List<String> appPrefs = new ArrayList<>();
+        if (chkAppEmail.isSelected()) appPrefs.add("EMAIL");
+        if (chkAppSms.isSelected()) appPrefs.add("SMS");
+        if (chkAppPush.isSelected()) appPrefs.add("APP");
+
+        List<String> offPrefs = new ArrayList<>();
+        if (chkOffEmail.isSelected()) offPrefs.add("EMAIL");
+        if (chkOffSms.isSelected()) offPrefs.add("SMS");
+        if (chkOffPush.isSelected()) offPrefs.add("APP");
 
         int priority = cbPriority.getSelectedIndex();
         String id = (existingId != null) ? existingId : UUID.randomUUID().toString().substring(0, 8);
@@ -199,7 +219,8 @@ public class AddDocumentDialog extends JDialog {
             .officerInfo(txtOfficerName.getText().trim(), txtOfficerEmail.getText().trim(), txtOfficerPhone.getText().trim())
             .documentDetails(cbDocumentType.getSelectedItem().toString(), txtDigitalSignature.getText().trim(), priority)
             .fileInfo(filePath, ext, size)
-            .notifications(prefs)
+            .applicantPrefs(appPrefs)
+            .officerPrefs(offPrefs)
             .isDraft(isDraft)
             .build();
 
