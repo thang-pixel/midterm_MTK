@@ -1,5 +1,5 @@
 {
-  "id": "a07579b7",
+  "id": "0fb46072",
   "applicantName": "thang",
   "applicantEmail": "thang@gmail.com",
   "applicantPhone": "0123456789",
@@ -7,13 +7,13 @@
   "officerEmail": "officer@tdtu.edu.vn",
   "officerPhone": "0123456789",
   "documentType": "DON_XIN_PHEP",
-  "filePath": "server_storage\\a07579b7_chuong1LSD.pdf",
+  "filePath": "server_storage\\0fb46072_demo_mtk.pdf",
   "fileExtension": "pdf",
-  "fileSizeKB": 91,
+  "fileSizeKB": 197,
   "digitalSignature": "thang",
   "priority": 0,
   "applicantPrefs": "EMAIL,APP",
-  "officerPrefs": "SMS",
+  "officerPrefs": "EMAIL,SMS",
   "isDraft": false,
-  "status": "DA_XU_LY"
+  "status": "DANG_XET_DUYET"
 }

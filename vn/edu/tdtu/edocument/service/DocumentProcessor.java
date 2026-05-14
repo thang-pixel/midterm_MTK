@@ -19,7 +19,6 @@ public class DocumentProcessor {
         notificationService.subscribe(new SMSNotification());
         notificationService.subscribe(new AppPushNotification());
 
-        // Default configuration
         setupDefaultChain();
         this.repository = new LocalJsonRepository();
     }
@@ -36,10 +35,6 @@ public class DocumentProcessor {
     // Yêu cầu 3 & 5: Cấu hình linh hoạt tại Runtime
     public void setValidationChain(ValidationHandler chain) { this.validationChain = chain; }
     
-    /**
-     * NÂNG CẤP YÊU CẦU 3: Cơ chế cấu hình mở hoàn toàn cho quy trình kiểm duyệt.
-     * Cho phép lắp ghép bất kỳ thứ tự nào dựa trên danh sách tên Handler (có thể đọc từ file config).
-     */
     public void configureChain(java.util.List<String> handlerNames) {
         if (handlerNames == null || handlerNames.isEmpty()) return;
         
@@ -111,11 +106,10 @@ public class DocumentProcessor {
         }
 
         // --- BƯỚC 3: LƯU TRỮ ĐA NỀN TẢNG (Repository/Adapter Pattern) ---
-        doc.status = "DA_XU_LY";
+        doc.status = "DANG_XET_DUYET";
         repository.save(doc);
 
         System.out.println("[HOÀN TẤT] Quy trình xử lý hồ sơ kết thúc thành công.");
-        doc.status = "DANG_XET_DUYET";
         notificationService.notifyObservers(doc);
     }
 

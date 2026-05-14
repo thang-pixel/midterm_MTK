@@ -39,7 +39,7 @@ public class NotificationService {
 
     private boolean shouldNotify(List<String> prefs, String observerType) {
         if (prefs == null || prefs.isEmpty()) {
-            return false; // Phải đăng ký mới gửi (Đúng tinh thần "Đăng ký nhận thông báo")
+            return false; 
         }
         for (String pref : prefs) {
             if (observerType.contains(pref)) return true;

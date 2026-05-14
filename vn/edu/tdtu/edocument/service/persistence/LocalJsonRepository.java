@@ -61,7 +61,16 @@ public class LocalJsonRepository implements DocumentRepository {
                     "}";
 
             String suffix = doc.isDraft ? "_draft.json" : "_data.json";
+            String oppositeSuffix = doc.isDraft ? "_data.json" : "_draft.json";
+            
             File dataFile = new File(storageDirPath + File.separator + doc.id + suffix);
+            File oppositeFile = new File(storageDirPath + File.separator + doc.id + oppositeSuffix);
+
+            // Xóa file đối nghịch nếu tồn tại (ví dụ: chuyển từ nháp sang chính thức)
+            if (oppositeFile.exists()) {
+                oppositeFile.delete();
+            }
+
             try (FileWriter writer = new FileWriter(dataFile)) {
                 writer.write(json);
             }
