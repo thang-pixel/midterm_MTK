@@ -32,8 +32,6 @@ public class NotificationService {
             }
         }
         
-        // Nghiệp vụ v1.0 2.5: Gửi thông báo cho quản lý nếu Thượng khẩn (Priority >= 2)
-        // Điều chỉnh lại điều kiện theo đúng ý giảng viên (Thượng khẩn mới báo quản lý)
         if (doc.priority >= 2) {
             System.out.println("  [MANAGER-ALERT] -> Gửi báo cáo khẩn đến Trưởng phòng (" + doc.officerEmail + ")");
         }

@@ -1,0 +1,19 @@
+{
+  "id": "a07579b7",
+  "applicantName": "thang",
+  "applicantEmail": "thang@gmail.com",
+  "applicantPhone": "0123456789",
+  "officerName": "Cán bộ trực ban",
+  "officerEmail": "officer@tdtu.edu.vn",
+  "officerPhone": "0123456789",
+  "documentType": "DON_XIN_PHEP",
+  "filePath": "server_storage\\a07579b7_chuong1LSD.pdf",
+  "fileExtension": "pdf",
+  "fileSizeKB": 91,
+  "digitalSignature": "thang",
+  "priority": 0,
+  "applicantPrefs": "EMAIL,APP",
+  "officerPrefs": "SMS",
+  "isDraft": false,
+  "status": "DA_XU_LY"
+}
